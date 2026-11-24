@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SideQuest · Reposição</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: ferramenta de bolso para a rota de reposição — direta, operacional, sem enfeite
+   IDEA: a frente da vending machine — gavetas e molas, cada uma com seu nível
+   PICTURE: o painel da máquina, gaveta por gaveta, com o estoque estimado e quanto levar em cada mola
+   COLOUR and TYPE: marca SideQuest — preto/carvão, branco, ouro queimado; Montserrat 800 + Inter
+   LAYOUT: máquina no topo, lista de separação com números grandes pendurados, alertas, depois mix e ajustes */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0e0e0e);--ink:light-dark(#151515,#f1efe9);--mute:light-dark(#6b6a66,#9d9a93);
+--line:light-dark(#e4e2dc,#2a2927);--panel:light-dark(#f4f3ef,#181817);--char:light-dark(#1b1b1b,#232322);
+--gold:light-dark(#9a6a1f,#cf9d4a);--goldbg:light-dark(#f6ecd9,#2e2416);--red:light-dark(#b3261e,#ff7a6b);--redbg:light-dark(#fbe6e3,#3a1a17)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Montserrat,system-ui,sans-serif;font-weight:800;line-height:1.08;margin:0;text-wrap:balance}
+h1{font-size:clamp(26px,4.4vw,40px)}h2{font-size:22px;margin-bottom:10px}h3{font-size:16px}
+.band{padding:clamp(18px,3vw,36px) max(4vw,16px)}.wrap{max-width:1240px;margin:0 auto}
+.top{background:var(--char);color:#f1efe9}.top .mute{color:#a9a69e}
+.brand{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;justify-content:space-between}
+.brand small{font:600 13px Montserrat,sans-serif;color:var(--gold);letter-spacing:.02em}
+.mute{color:var(--mute)}.small{font-size:13px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.chip{flex:1 1 150px;text-align:left;border:1px solid #3a3937;background:#141413;color:#f1efe9;border-radius:10px;padding:10px 12px;cursor:pointer;min-height:44px;font:inherit}
+.chip b{display:block;font:800 15px Montserrat,sans-serif}.chip span{font-size:13px;color:#a9a69e}
+.chip[aria-pressed=true]{border-color:#cf9d4a;box-shadow:inset 0 0 0 1px #cf9d4a}
+.chip .warn{color:#ff8b7c}
+nav.tabs{display:flex;gap:4px;margin-top:14px;overflow-x:auto}
+nav.tabs a{color:#cfccc4;text-decoration:none;padding:10px 14px;border-radius:8px 8px 0 0;font-weight:600;white-space:nowrap}
+nav.tabs a[aria-current=page]{background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+button.b,label.b{font:600 15px Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+button.b.pri{background:var(--gold);border-color:var(--gold);color:#fff}
+button.b:focus-visible,.slot:focus-visible,input:focus-visible,select:focus-visible,.chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input,select{font:16px Inter,sans-serif;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);max-width:100%}
+input[type=number]{width:76px;text-align:right}
+.visit{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.visit .big{font:800 clamp(22px,3.4vw,30px) Montserrat,sans-serif}
+.grid2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:clamp(16px,3vw,36px);align-items:start}
+@media(max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.machine{background:var(--char);border-radius:16px;padding:12px;color:#f1efe9}
+.drawer{border-top:1px solid #34332f;padding:8px 0 10px}.drawer:first-child{border-top:0}
+.drawer h4{margin:0 0 6px;font:600 12px Inter,sans-serif;color:#a9a69e}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.slots.bl{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.slot{all:unset;box-sizing:border-box;cursor:pointer;background:#141413;border:1px solid #34332f;border-radius:9px;padding:6px 7px;display:grid;gap:3px;min-height:76px}
+.slot .n{font:800 13px Montserrat,sans-serif;display:flex;justify-content:space-between}
+.slot .p{font-size:12px;color:#bdbab2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .q{font:800 17px Montserrat,sans-serif;color:#cf9d4a;white-space:nowrap}
+.slot .q.z{color:#77746d;font-weight:600;font-size:13px}
+.bar{position:relative;height:6px;background:#2b2a27;border-radius:3px;overflow:visible}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:#e9e6de;border-radius:3px}
+.bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#cf9d4a}
+.bar.unk i{background:repeating-linear-gradient(90deg,#4a4844 0 3px,transparent 3px 6px)}
+.slot.vazia{border-color:#ff7a6b;background:#2a1513}.slot.vazia .n::after{content:'vazia';color:#ff8b7c;font:600 11px Inter}
+.slot.curta{border-color:#8a6a33}
+.slot.off{opacity:.5}
+.slot[aria-pressed=true]{outline:2px solid #cf9d4a}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#a9a69e;margin-top:8px}
+.legend i{display:inline-block;width:14px;height:6px;background:#e9e6de;border-radius:3px;vertical-align:middle;margin-right:4px}
+.legend b{display:inline-block;width:2px;height:12px;background:#cf9d4a;vertical-align:middle;margin-right:4px}
+.pick{list-style:none;margin:0;padding:0;border-top:3px solid var(--ink)}
+.pick li{display:grid;grid-template-columns:76px minmax(0,1fr);gap:4px 14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pick .num{font:800 34px/1 Montserrat,sans-serif;text-align:right;font-variant-numeric:tabular-nums}
+.pick .nm{font-weight:600}.pick .cs{font-size:13px;color:var(--mute);grid-column:2}
+.pick li.tot .num{color:var(--gold)}
+.alerts{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.alerts li{padding:9px 12px;border-radius:9px;background:var(--panel);font-size:14px}
+.alerts li.r{background:var(--redbg)}.alerts li.g{background:var(--goldbg)}
+.card{background:var(--panel);border-radius:12px;padding:14px}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0}.detail dt{color:var(--mute);font-size:14px}.detail dd{margin:0;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--mute);font-size:13px}td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scroll{overflow-x:auto}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:99px;background:var(--goldbg);color:var(--gold);font-weight:600;white-space:nowrap}
+.tag.r{background:var(--redbg);color:var(--red)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:9}
+.sheet.on{display:flex}
+.sheet>div{background:var(--bg);width:min(760px,100%);max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px max(4vw,16px) 24px}
+.erows{display:grid;gap:6px;margin:12px 0}
+.erow{display:grid;grid-template-columns:44px minmax(0,1fr) 84px;gap:8px;align-items:center}
+.erow .c{font:800 15px Montserrat,sans-serif}
+.section{margin-top:28px}
+.note{font-size:13px;color:var(--mute);margin-top:8px}
+.status{font-size:13px;margin-top:8px;color:#a9a69e}
+.gedit{display:grid;grid-template-columns:90px 110px 80px minmax(0,1fr);gap:8px;align-items:center;margin:6px 0}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8.5em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:8em;margin-inline-start:-8.5em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}.gedit{grid-template-columns:1fr 1fr}.pick li{grid-template-columns:60px minmax(0,1fr)}.pick .num{font-size:28px}}
+@media(prefers-reduced-motion:no-preference){.bar i{transition:width .5s ease}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="top band">
+ <div class="wrap">
+  <div class="brand"><h1>Reposição das máquinas</h1><small>SideQuest · Vending</small></div>
+  <div class="status" id="status">Carregando dados…</div>
+  <div class="chips" id="chips"></div>
+  <nav class="tabs" id="tabs"><a href="#visita">Próxima visita</a><a href="#mix">Mix de produtos</a><a href="#ajustes">Ajustes</a></nav>
+ </div>
+</header>
+<main class="band"><div class="wrap" id="main"></div></main>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT"><div id="shBody"></div></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+const CFG = { apiKey: "AIzaSyCQALaocRiFbJ0vUUWlb0WE69qCFsJrpKk", authDomain: "sidequest-reposicao.firebaseapp.com", projectId: "sidequest-reposicao", storageBucket: "sidequest-reposicao.firebasestorage.app", messagingSenderId: "542444911121", appId: "1:542444911121:web:bed612177980e0fec14fb0" };
+{
+// Motor do planejador — tempos em minutos desde 2026-01-01 00:00 (hora local, sem fuso)
+const EPOCH = Date.UTC(2026, 0, 1);
+const DIA = 1440;
+const TAXA = 0.012; // taxa média de pagamento
+function nowMin() { const d = new Date(); return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()) - EPOCH) / 60000); }
+function toDate(t) { return new Date(EPOCH + t * 60000); }
+function fmtD(t) { const d = toDate(t); return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0'); }
+function isoToMin(s) { const [y, m, d] = s.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 60000); }
+function minToIso(t) { return toDate(t).toISOString().slice(0, 10); }
+
+function catPorPreco(produtos, preco) {
+  let best = null;
+  for (const [id, p] of Object.entries(produtos)) if (p.generico && Math.abs(p.preco - preco) < 0.2) best = id;
+  if (!best) for (const [id, p] of Object.entries(produtos)) if (Math.abs(p.preco - preco) < 0.2) { best = id; break; }
+  return best || ('preco:' + preco);
+}
+function mesmoPreco(produtos, id, preco) { const p = produtos[id]; return p && Math.abs(p.preco - preco) < 0.2; }
+function canaletasDe(maq) { const out = []; for (const g of maq.gavetas || []) for (const c of g.can) out.push({ can: c, cap: g.cap, tipo: g.tipo, gaveta: g.nome }); return out; }
+
+// Monta, para uma máquina, as vendas por canaleta já com o produto atribuído
+function vendasDaMaquina(st, m) {
+  const ev = st.eventos.filter(e => e.maq === m).sort((a, b) => a.t - b.t);
+  const plano = (st.maquinas[m] || {}).plano || {};
+  const out = {};
+  for (const doc of st.vendas) if (doc.maq === m) for (const [t, can, preco] of doc.v) {
+    let prod = null;
+    for (let i = ev.length - 1; i >= 0; i--) if (ev[i].t <= t && ev[i].produtos && ev[i].produtos[can]) { prod = ev[i].produtos[can]; break; }
+    if (!prod || !mesmoPreco(st.produtos, prod, preco)) prod = (!ev.length && plano[can] && mesmoPreco(st.produtos, plano[can], preco)) ? plano[can] : catPorPreco(st.produtos, preco);
+    (out[can] = out[can] || []).push({ t, preco, prod });
+  }
+  for (const k in out) out[k].sort((a, b) => a.t - b.t);
+  return { porCan: out, eventos: ev };
+}
+
+function fimDados(st) { let f = 0; for (const d of st.vendas) for (const x of d.v) if (x[0] > f) f = x[0]; return f; }
+
+// Velocidade de uma canaleta para o produto que está nela hoje
+function statsCanaleta(st, m, can, prodAtual, vm, fim) {
+  const cfg = st.cfg, W = (cfg.janelaDias || 21) * DIA;
+  let ini = fim - W;
+  const evs = vm.eventos;
+  // se o produto da canaleta mudou dentro da janela, conta só desde a troca
+  for (const e of evs) if (e.produtos && e.produtos[can] && e.t > ini && e.t <= fim) {
+    const antes = evs.filter(x => x.t < e.t && x.produtos && x.produtos[can]).pop();
+    if (antes && antes.produtos[can] !== e.produtos[can]) ini = e.t;
+  }
+  const inst = (st.maquinas[m] || {}).instalada; if (inst) ini = Math.max(ini, isoToMin(inst));
+  const todas = vm.porCan[can] || [];
+  const vend = todas.filter(v => v.t > ini && v.t <= fim && (!prodAtual || v.prod === prodAtual));
+  // períodos vazios pelos registros de reposição/contagem
+  let vazio = 0;
+  const evCan = evs.filter(e => e.niveis && e.niveis[can] != null);
+  for (let i = 0; i < evCan.length; i++) {
+    const e = evCan[i], prox = i + 1 < evCan.length ? evCan[i + 1].t : fim;
+    let n = +e.niveis[can], tz = null;
+    if (n <= 0) tz = e.t; else { let c = 0; for (const v of todas) if (v.t > e.t && v.t <= prox) { c++; if (c >= n) { tz = v.t; break; } } }
+    if (tz != null) { const a = Math.max(tz, ini), b = Math.min(prox, fim); if (b > a) vazio += b - a; }
+  }
+  let dias = (fim - ini) / DIA, n = vend.length, ult = todas.length ? todas[todas.length - 1].t : null;
+  let provVazia = false, vaziaDesde = null;
+  // antes do primeiro registro: mola que parou de vender de repente conta como vazia
+  const primeiro = evCan.find(e => e.t > ini);
+  const segFim = Math.min(fim, primeiro ? primeiro.t : fim);
+  if (!evCan.some(e => e.t <= ini)) {
+    const seg = vend.filter(v => v.t <= segFim), L = seg.length ? seg[seg.length - 1].t : null;
+    if (seg.length >= 2 && L != null) {
+      const r0 = seg.length / ((segFim - ini) / DIA), gap = (segFim - L) / DIA;
+      if (gap > Math.max(4, 3 / r0)) { vazio += segFim - L; if (!primeiro) { provVazia = true; vaziaDesde = L; } }
+    }
+  }
+  const exp = Math.max(dias - vazio / DIA, 0);
+  const taxa = n === 0 ? 0 : n / Math.max(exp, Math.min(7, dias));
+  return { n, dias, exp, taxa, provVazia, vaziaDesde, ult, ini };
+}
+
+function estoqueEstimado(vm, can, fim, agora, taxa) {
+  const evs = vm.eventos.filter(e => e.niveis && e.niveis[can] != null);
+  if (!evs.length) return null;
+  const e = evs[evs.length - 1];
+  const vend = (vm.porCan[can] || []).filter(v => v.t > e.t && v.t <= fim).length;
+  const proj = agora > fim ? taxa * (agora - Math.max(fim, e.t)) / DIA : 0;
+  return { valor: Math.max(0, +e.niveis[can] - vend - proj), base: e.t, vendidas: vend, proj };
+}
+
+function fatorMes(cfg, t) { const k = minToIso(t).slice(0, 7); return (cfg.fatores && cfg.fatores[k]) || 1; }
+
+// Plano completo de uma máquina para a próxima visita
+function planoMaquina(st, m, agora) {
+  const maq = st.maquinas[m], cfg = st.cfg, fim = fimDados(st);
+  agora = agora || nowMin();
+  const vm = vendasDaMaquina(st, m);
+  const visita = maq.proximaVisita ? isoToMin(maq.proximaVisita) : agora;
+  const intervalo = maq.intervaloDias || 7, margem = cfg.margemDias ?? 2;
+  const fator = fatorMes(cfg, visita + DIA);
+  const H = (intervalo + margem) * fator;
+  const cans = canaletasDe(maq).map(c => {
+    const prod = (maq.plano || {})[c.can] || null;
+    const s = statsCanaleta(st, m, c.can, prod, vm, fim);
+    let taxa = s.taxa, semHist = false;
+    if (prod && s.n === 0 && !s.provVazia) {
+      // produto novo nesta canaleta: usa a média por canaleta do mesmo produto (nesta máquina ou nas outras)
+      const ref = mediaProduto(st, prod, m, fim);
+      if (ref != null) taxa = ref; else semHist = true;
+    }
+    let est = estoqueEstimado(vm, c.can, fim, visita, taxa);
+    if (!est && s.provVazia) est = { valor: 0, base: s.vaziaDesde, inferido: true };
+    const zerada = !!(est && !est.inferido && est.valor < 0.5);
+    const need = taxa * H;
+    let alvo = !prod ? 0 : cfg.modo === 'cheio' ? c.cap : semHist ? Math.ceil(c.cap / 2) : Math.min(c.cap, Math.max(cfg.minExib ?? 4, Math.ceil(need)));
+    const p = st.produtos[prod];
+    if (p && p.premium && maq.semPremium) alvo = 0;
+    const repor = est ? Math.max(0, Math.ceil(alvo - est.valor)) : alvo;
+    const esvaziaEm = taxa > 0 ? c.cap / (taxa * fator) : null;
+    return { ...c, prod, ...s, taxa, semHist, est, zerada, need, alvo, repor, esvaziaEm, bloqueado: !!(p && p.premium && maq.semPremium) };
+  });
+  // separação por produto
+  const sep = {};
+  for (const c of cans) if (c.prod && c.repor > 0) { const k = c.prod; sep[k] = sep[k] || { prod: k, qtd: 0, cans: [] }; sep[k].qtd += c.repor; sep[k].cans.push(c.can); }
+  const alertas = [];
+  for (const c of cans) {
+    if (c.provVazia) alertas.push({ tipo: 'vazia', can: c.can, prod: c.prod, desde: c.vaziaDesde, perdidas: c.taxa * (fim - c.vaziaDesde) / DIA });
+    else if (c.zerada) alertas.push({ tipo: 'zerada', can: c.can, prod: c.prod });
+    else if (c.esvaziaEm != null && c.esvaziaEm < intervalo) alertas.push({ tipo: 'curta', can: c.can, prod: c.prod, dias: c.esvaziaEm });
+    if (!c.provVazia && c.n === 0 && c.ult != null && c.ult < c.ini) alertas.push({ tipo: 'parada', can: c.can, prod: c.prod, desde: c.ult });
+    if (c.bloqueado) alertas.push({ tipo: 'bloqueado', can: c.can, prod: c.prod });
+    if (!c.prod) alertas.push({ tipo: 'semprod', can: c.can });
+  }
+  return { m, fim, visita, intervalo, margem, fator, H, cans, sep: Object.values(sep).sort((a, b) => b.qtd - a.qtd), alertas, temEventos: vm.eventos.length > 0 };
+}
+
+function mediaProduto(st, prod, mPref, fim) {
+  const taxas = { pref: [], outras: [] };
+  for (const m of Object.keys(st.maquinas)) {
+    const maq = st.maquinas[m], vm = vendasDaMaquina(st, m);
+    for (const c of canaletasDe(maq)) if ((maq.plano || {})[c.can] === prod) {
+      const s = statsCanaleta(st, m, c.can, prod, vm, fim);
+      if (s.n > 0) (m === mPref ? taxas.pref : taxas.outras).push(s.taxa);
+    }
+  }
+  const a = taxas.pref.length ? taxas.pref : taxas.outras;
+  return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+}
+
+// Mix: quantas canaletas cada produto precisa em cada máquina
+function mixMaquina(st, plano) {
+  const maq = st.maquinas[plano.m], porTipo = {};
+  for (const c of plano.cans) {
+    const t = c.tipo; porTipo[t] = porTipo[t] || { tipo: t, total: 0, cap: c.cap, prods: {} };
+    porTipo[t].total++;
+    if (!c.prod) continue;
+    const P = porTipo[t].prods[c.prod] = porTipo[t].prods[c.prod] || { prod: c.prod, cans: [], taxa: 0, vazias: 0 };
+    P.cans.push(c.can); P.taxa += c.taxa; if (c.provVazia) P.vazias++;
+  }
+  for (const T of Object.values(porTipo)) {
+    let soma = 0;
+    T.lista = Object.values(T.prods).map(P => {
+      const pr = st.produtos[P.prod] || {}; const lu = (pr.preco || 0) * (1 - TAXA) - (pr.custo || 0);
+      P.lucroUn = lu; P.lucroDia = P.taxa * lu; P.lucroCan = P.lucroDia / P.cans.length;
+      P.precisa = P.taxa * plano.intervalo * plano.fator / T.cap;
+      P.sugerido = Math.max(1, Math.ceil(P.precisa - 0.15));
+      soma += P.sugerido; return P;
+    }).sort((a, b) => b.lucroDia - a.lucroDia);
+    T.livres = T.total - soma;
+  }
+  return Object.values(porTipo);
+}
+
+if (false) module.exports = { planoMaquina, mixMaquina, vendasDaMaquina, statsCanaleta, fimDados, fmtD, isoToMin, minToIso, nowMin, canaletasDe, catPorPreco };
+
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const n1 = x => (Math.round(x * 10) / 10).toLocaleString('pt-BR');
+const brl = x => 'R$ ' + (x || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const DOW = ['dom','seg','ter','qua','qui','sex','sáb'];
+const fmtDia = iso => { const d = new Date(iso + 'T12:00:00Z'); return DOW[d.getUTCDay()] + ' ' + iso.slice(8,10) + '/' + iso.slice(5,7); };
+const fmtDH = t => { const d = toDate(t); return fmtD(t) + ' ' + String(d.getUTCHours()).padStart(2,'0') + 'h' + String(d.getUTCMinutes()).padStart(2,'0'); };
+
+const st = { cfg: {}, maquinas: {}, produtos: {}, vendas: [], eventos: [] };
+const loaded = { cfg: 0, maquinas: 0, produtos: 0, vendas: 0, eventos: 0 };
+let db = null, sel = null, slotSel = null, canWrite = true, timer;
+try { sel = localStorage.getItem('sq-maq'); } catch (e) {}
+
+const nomeP = id => (st.produtos[id] && (st.produtos[id].curto || st.produtos[id].nome)) || (id ? id : '—');
+const maqIds = () => Object.keys(st.maquinas).sort((a, b) => (st.maquinas[a].ordem || 9) - (st.maquinas[b].ordem || 9));
+const prodIds = tipo => Object.keys(st.produtos).filter(id => st.produtos[id].ativo !== false && (!tipo || st.produtos[id].tipo === tipo)).sort((a, b) => nomeP(a).localeCompare(nomeP(b)));
+
+let rT; function render() { clearTimeout(rT); rT = setTimeout(renderNow, 30); }
+function ready() { return Object.values(loaded).every(Boolean) && Object.keys(st.maquinas).length; }
+
+function renderNow() {
+  if (Object.values(loaded).every(Boolean) && !Object.keys(st.maquinas).length) {
+    $('#status').textContent = 'Banco vazio.';
+    $('#main').innerHTML = '<div class="card"><h2>Primeiro acesso</h2><p>O banco ainda está vazio. Escolha os dois arquivos <b>seed.json</b> e <b>vendas_inicial.json</b> da pasta Documentos › SideQuest_Vending › site_reposicao (selecione os dois juntos).</p><label class="b pri" for="seedF">Escolher arquivos</label><input type="file" id="seedF" accept=".json" multiple hidden> <span id="seedMsg" class="note"></span></div>';
+    return;
+  }
+  if (!ready()) return;
+  if (!sel || !st.maquinas[sel]) sel = maqIds()[0];
+  const fim = fimDados(st), agora = nowMin(), idade = (agora - fim) / DIA;
+  $('#status').innerHTML = 'Vendas até <b>' + esc(fim ? fmtDH(fim) : '—') + '</b>' + (idade > 3 ? ' · <span style="color:#ff8b7c">dados com ' + Math.floor(idade) + ' dias — importe a planilha atualizada em Ajustes</span>' : '');
+  const planos = {}; for (const m of maqIds()) planos[m] = planoMaquina(st, m, agora);
+  $('#chips').innerHTML = maqIds().map(m => {
+    const p = planos[m], v = p.cans.reduce((a, c) => a + c.taxa, 0), vaz = p.alertas.filter(a => a.tipo === 'vazia').length;
+    return `<button class="chip" data-m="${esc(m)}" aria-pressed="${m === sel}"><b>${esc(st.maquinas[m].nome)}</b><span>${n1(v)} vendas/dia${vaz ? ` · <span class="warn">${vaz} vazia${vaz > 1 ? 's' : ''}</span>` : ''}</span></button>`;
+  }).join('');
+  const view = (location.hash || '#visita').slice(1);
+  document.querySelectorAll('#tabs a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + view ? 'page' : 'false'));
+  const main = $('#main');
+  if (view === 'mix') main.innerHTML = viewMix(planos);
+  else if (view === 'ajustes') main.innerHTML = viewAjustes();
+  else main.innerHTML = viewVisita(planos[sel]);
+}
+
+/* ---------- Próxima visita ---------- */
+function slotHTML(c) {
+  const cls = (c.provVazia || c.zerada) ? 'vazia' : (c.esvaziaEm != null && c.esvaziaEm < (st.maquinas[sel].intervaloDias || 7)) ? 'curta' : '';
+  const estW = c.est ? Math.min(100, c.est.valor / c.cap * 100) : 100;
+  const q = !c.prod ? '<span class="q z">sem produto</span>' : c.bloqueado ? '<span class="q z">bloqueado</span>' :
+    c.repor > 0 ? `<span class="q">+${c.repor}</span>` : '<span class="q z">ok</span>';
+  return `<button class="slot ${cls} ${c.prod ? '' : 'off'}" data-can="${c.can}" aria-pressed="${slotSel === c.can}" aria-label="Canaleta ${c.can}">
+   <span class="n">${c.can}</span><span class="p">${esc(nomeP(c.prod))}</span>
+   <span class="bar ${c.est ? '' : 'unk'}"><i style="width:${estW}%"></i><b style="left:calc(${Math.min(100, c.alvo / c.cap * 100)}% - 1px)"></b></span>${q}</button>`;
+}
+function viewVisita(p) {
+  const maq = st.maquinas[p.m], gav = maq.gavetas || [];
+  const byCan = Object.fromEntries(p.cans.map(c => [c.can, c]));
+  const machine = `<div class="machine">${gav.map(g => `<div class="drawer"><h4>${esc(g.nome)} · ${esc(g.tipo)} · até ${g.cap} por mola</h4><div class="slots ${g.tipo === 'Booster' ? '' : 'bl'}">${g.can.map(c => slotHTML(byCan[c])).join('')}</div></div>`).join('')}
+   <div class="legend"><span><i></i>estoque estimado</span><span><b></b>nível sugerido</span><span>+N = levar</span></div></div>`;
+  const tot = p.sep.reduce((a, s) => a + s.qtd, 0);
+  const pick = `<ol class="pick">${p.sep.map(s => { const lj = st.produtos[s.prod]?.estoqueLoja; return `<li><span class="num">${s.qtd}</span><span class="nm">${esc(nomeP(s.prod))}${lj != null && lj !== '' && +lj < s.qtd ? ' <span class="tag r">loja tem ' + esc(lj) + '</span>' : ''}</span><span class="cs">canaletas ${s.cans.join(', ')}</span></li>`; }).join('')}
+   <li class="tot"><span class="num">${tot}</span><span class="nm">itens no total</span></li></ol>`;
+  const al = p.alertas.map(a => {
+    if (a.tipo === 'vazia') return `<li class="r"><b>Canaleta ${a.can}</b> (${esc(nomeP(a.prod))}) parou de vender em ${fmtD(a.desde)} — provavelmente vazia. No ritmo dela, até ~${Math.round(a.perdidas)} vendas deixaram de acontecer.</li>`;
+    if (a.tipo === 'zerada') return `<li class="r"><b>Canaleta ${a.can}</b> (${esc(nomeP(a.prod))}) deve estar vazia pelas vendas desde o último registro.</li>`;
+    if (a.tipo === 'curta') return `<li class="g"><b>Canaleta ${a.can}</b> (${esc(nomeP(a.prod))}) cheia dura ~${n1(a.dias)} dias, menos que o intervalo de visitas. Dê outra mola a esse produto ou visite antes.</li>`;
+    if (a.tipo === 'parada') return `<li><b>Canaleta ${a.can}</b> (${esc(nomeP(a.prod))}) sem venda desde ${fmtD(a.desde)}: vazia ou produto parado? Confira na visita.</li>`;
+    if (a.tipo === 'bloqueado') return `<li><b>Canaleta ${a.can}</b>: produto premium bloqueado nesta máquina.</li>`;
+    if (a.tipo === 'semprod') return `<li><b>Canaleta ${a.can}</b> sem produto definido — toque nela para escolher.</li>`;
+  }).join('');
+  const sc = slotSel != null && byCan[slotSel] ? detailHTML(byCan[slotSel], p) : '<p class="mute small">Toque numa canaleta para ver o giro dela e trocar o produto.</p>';
+  return `<div class="visit"><span class="mute">Próxima visita</span><span class="big">${esc(maq.proximaVisita ? fmtDia(maq.proximaVisita) : 'sem data')}</span>
+    <input type="date" id="visDate" value="${esc(maq.proximaVisita || '')}" aria-label="Data da próxima visita">
+    <span class="mute small">cobre ${n1(p.intervalo + p.margem)} dias (${p.intervalo} até a seguinte + ${p.margem} de folga)${p.fator !== 1 ? ' · demanda ×' + p.fator : ''}</span></div>
+   <div class="grid2"><div>${machine}<div id="det" class="card detail" style="margin-top:12px">${sc}</div></div>
+   <div><h2>Lista de separação</h2>${p.temEventos ? '' : '<p class="note" style="margin-top:0">Ainda não há reposição registrada, então o sistema não sabe quanto sobrou em cada mola (exceto as vazias). Os números são o nível sugerido: na máquina, desconte o que já estiver lá. Depois do primeiro registro, a lista passa a ser exata.</p>'}
+    ${tot ? pick : '<p class="mute">Nada a levar.</p>'}
+    <div class="row" style="margin-top:12px"><button class="b" id="copy">Copiar lista</button><button class="b pri" id="regRep">Registrar reposição</button><button class="b" id="regCont">Registrar contagem</button></div>
+    <div class="section"><h2>Atenção</h2>${al ? `<ul class="alerts">${al}</ul>` : '<p class="mute">Nenhum alerta.</p>'}</div></div></div>`;
+}
+function detailHTML(c, p) {
+  const opts = prodIds(c.tipo).map(id => `<option value="${esc(id)}" ${id === c.prod ? 'selected' : ''}>${esc(nomeP(id))}</option>`).join('');
+  return `<h3>Canaleta ${c.can} · ${esc(c.gaveta)}</h3><dl>
+   <dt>Vendas/dia</dt><dd>${n1(c.taxa)}${c.semHist ? ' <span class="tag">sem histórico</span>' : c.n === 0 && c.taxa > 0 ? ' <span class="tag">média do produto</span>' : ''}</dd>
+   <dt>Vendas na janela</dt><dd>${c.n} em ${n1(c.exp)} dias com produto</dd>
+   <dt>Última venda</dt><dd>${c.ult ? fmtDH(c.ult) : '—'}</dd>
+   <dt>Estoque estimado</dt><dd>${c.est ? Math.round(c.est.valor) + (c.est.inferido ? ' (parou de vender)' : ' (desde registro de ' + fmtD(c.est.base) + ')') : 'desconhecido'}</dd>
+   <dt>Nível sugerido</dt><dd>${c.alvo} de ${c.cap}</dd>
+   <dt>Cheia dura</dt><dd>${c.esvaziaEm ? n1(c.esvaziaEm) + ' dias' : '—'}</dd></dl>
+   <label class="small mute" for="slotProd">Produto nesta canaleta</label><br><select id="slotProd" data-can="${c.can}"><option value="">— vazia / sem produto —</option>${opts}</select>`;
+}
+
+/* ---------- Mix ---------- */
+function viewMix(planos) {
+  const p = planos[sel], tipos = mixMaquina(st, p);
+  const blocks = tipos.map(T => `<div class="section"><h2>Molas de ${esc(T.tipo)} · ${T.total}</h2><div class="scroll"><table class="stack"><thead><tr><th>Produto</th><th class="r">Molas hoje</th><th class="r">Vendas/dia</th><th class="r">Lucro/dia</th><th class="r">Lucro/dia por mola</th><th class="r">Molas p/ ${p.intervalo} dias</th></tr></thead><tbody>
+    ${T.lista.map(P => `<tr><td>${esc(nomeP(P.prod))}${P.vazias ? ` <span class="tag r">${P.vazias} vazia${P.vazias > 1 ? 's' : ''}</span>` : ''}</td><td class="r">${P.cans.length}</td><td class="r">${n1(P.taxa)}</td><td class="r">${brl(P.lucroDia)}</td><td class="r">${brl(P.lucroCan)}</td><td class="r">${P.sugerido}${P.sugerido > P.cans.length ? ' <span class="tag r">falta</span>' : P.cans.length - P.sugerido >= 2 ? ' <span class="tag">sobra ' + (P.cans.length - P.sugerido) + '</span>' : ''}</td></tr>`).join('')}
+    </tbody></table></div><p class="note">${T.livres > 0 ? `Com visita a cada ${p.intervalo} dias, ${T.livres} das ${T.total} molas de ${esc(T.tipo.toLowerCase())} não são necessárias para segurar o giro atual. Dá para usá-las para variar: outras coleções, outros TCGs ou um teste.` : T.livres < 0 ? `O giro precisa de ${-T.livres} molas a mais do que a máquina tem nesse intervalo: encurte o intervalo de visitas.` : 'As molas estão no limite para o giro atual.'}</p></div>`).join('');
+  const prods = [...new Set(maqIds().flatMap(m => planos[m].cans.map(c => c.prod).filter(Boolean)))];
+  const cell = (m, id) => { const cs = planos[m].cans.filter(c => c.prod === id); if (!cs.length) return '<td class="r mute">—</td>'; const t = cs.reduce((a, c) => a + c.taxa, 0); return `<td class="r">${n1(t)}<span class="mute small"> · ${n1(t / cs.length)}/mola</span></td>`; };
+  const matrix = `<div class="section"><h2>Mesmo produto, máquinas diferentes</h2><p class="note" style="margin-top:0">Vendas por dia no total e por mola. Um produto que gira bem por mola numa máquina e está ausente em outra é candidato a teste lá.</p><div class="scroll"><table><thead><tr><th>Produto</th>${maqIds().map(m => `<th class="r">${esc(st.maquinas[m].nome)}</th>`).join('')}</tr></thead><tbody>
+    ${prods.map(id => `<tr><td>${esc(nomeP(id))}</td>${maqIds().map(m => cell(m, id)).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+  return `<h2>${esc(st.maquinas[sel].nome)}: quanto espaço cada produto merece</h2><p class="mute" style="margin-top:0">Vendas dos últimos ${st.cfg.janelaDias || 21} dias, descontando os dias em que a mola estava vazia. Lucro já sem custo e taxa média de pagamento.</p>${blocks}${matrix}`;
+}
+
+/* ---------- Ajustes ---------- */
+function viewAjustes() {
+  const maq = st.maquinas[sel], c = st.cfg;
+  const gav = (maq.gavetas || []).map((g, i) => `<div class="gedit" data-g="${i}"><input aria-label="Nome" value="${esc(g.nome)}" data-f="nome"><select data-f="tipo" aria-label="Tipo"><option ${g.tipo === 'Booster' ? 'selected' : ''}>Booster</option><option ${g.tipo === 'Blister' ? 'selected' : ''}>Blister</option></select><input type="number" aria-label="Capacidade" value="${g.cap}" data-f="cap"><input aria-label="Canaletas" value="${esc(g.can.join(', '))}" data-f="can"></div>`).join('');
+  const prods = Object.keys(st.produtos).sort((a, b) => nomeP(a).localeCompare(nomeP(b))).map(id => { const p = st.produtos[id]; return `<tr data-p="${esc(id)}"><td><input value="${esc(p.nome)}" data-f="nome" aria-label="Nome"></td><td><input value="${esc(p.curto || '')}" data-f="curto" aria-label="Nome curto"></td><td><input type="number" step="0.01" value="${p.preco}" data-f="preco" aria-label="Preço"></td><td><input type="number" step="0.01" value="${p.custo}" data-f="custo" aria-label="Custo"></td><td><select data-f="tipo" aria-label="Mola"><option ${p.tipo === 'Booster' ? 'selected' : ''}>Booster</option><option ${p.tipo === 'Blister' ? 'selected' : ''}>Blister</option></select></td><td><input type="checkbox" data-f="premium" ${p.premium ? 'checked' : ''} aria-label="Premium"></td><td><input type="number" value="${p.estoqueLoja ?? ''}" data-f="estoqueLoja" aria-label="Na loja"></td><td><input type="checkbox" data-f="ativo" ${p.ativo !== false ? 'checked' : ''} aria-label="Ativo"></td></tr>`; }).join('');
+  const evs = st.eventos.filter(e => e.maq === sel).sort((a, b) => b.t - a.t).slice(0, 12);
+  const dez = (c.fatores || {})['2026-12'] ?? 1;
+  return `<div class="grid2"><div>
+   <h2>${esc(maq.nome)}</h2>
+   <div class="row"><label>Visita a cada <input type="number" id="intv" value="${maq.intervaloDias || 7}"> dias</label>
+   <label><input type="checkbox" id="semP" ${maq.semPremium ? 'checked' : ''}> sem produtos premium</label></div>
+   ${maq.layoutInferido ? '<p class="note"><span class="tag">a confirmar</span> Layout desta máquina deduzido das vendas. Corrija abaixo se estiver diferente.</p>' : ''}
+   <h3 style="margin-top:18px">Gavetas</h3><p class="note">Nome · tipo de mola · capacidade · números das canaletas separados por vírgula</p><div id="gavs">${gav}</div>
+   <div class="row" style="margin-top:8px"><button class="b" id="addGav">+ Gaveta</button><button class="b pri" id="saveMaq">Salvar máquina</button></div>
+   <div class="section"><h2>Parâmetros</h2>
+   <div class="row"><label>Folga <input type="number" id="cMarg" value="${c.margemDias ?? 2}"> dias</label><label>Janela <input type="number" id="cJan" value="${c.janelaDias || 21}"> dias</label><label>Mínimo por mola <input type="number" id="cMin" value="${c.minExib ?? 4}"></label></div>
+   <div class="row" style="margin-top:8px"><label>Nível <select id="cModo"><option value="giro" ${c.modo !== 'cheio' ? 'selected' : ''}>pelo giro</option><option value="cheio" ${c.modo === 'cheio' ? 'selected' : ''}>sempre cheia</option></select></label><label>Demanda em dezembro × <input type="number" step="0.1" id="cDez" value="${dez}"></label><button class="b pri" id="saveCfg">Salvar</button></div>
+   <p class="note">“Pelo giro” enche cada mola só com o que deve vender até a visita seguinte mais a folga. “Sempre cheia” enche tudo.</p></div>
+   <div class="section"><h2>Acesso dos sócios</h2><p class="note" style="margin-top:0">Quem tiver este link entra no sistema e pode editar. Mande só para os sócios.</p><button class="b" id="copyLink">Copiar link de acesso</button></div>
+   <div class="section"><h2>Importar vendas</h2><p class="note" style="margin-top:0">Escolha a planilha Vending_Machines_Analise_Mensal.xlsx atualizada. A página lê a aba Dados e substitui as vendas guardadas.</p>
+   <label class="b" for="xls">Escolher planilha</label><input type="file" id="xls" accept=".xlsx" hidden><div id="impMsg" class="note"></div></div>
+  </div><div>
+   <h2>Registros de ${esc(maq.nome)}</h2>${evs.length ? `<table><tbody>${evs.map(e => `<tr><td>${fmtDH(e.t)}</td><td>${e.tipo === 'contagem' ? 'Contagem' : 'Reposição'} · ${Object.keys(e.niveis || {}).length} molas</td><td class="r"><button class="b" data-del="${esc(e.id)}">Apagar</button></td></tr>`).join('')}</tbody></table>` : '<p class="mute">Nenhum registro ainda.</p>'}
+  </div></div>
+  <div class="section"><h2>Produtos</h2><p class="note" style="margin-top:0">Cadastre cada coleção separadamente (ex.: um booster por expansão, mesmo com o mesmo preço) e escolha na canaleta qual está lá. As vendas antigas ficam no produto genérico da faixa de preço.</p>
+  <div class="scroll"><table class="stack" id="ptab"><thead><tr><th>Nome</th><th>Curto</th><th>Preço</th><th>Custo</th><th>Mola</th><th>Premium</th><th>Na loja</th><th>Ativo</th></tr></thead><tbody>${prods}</tbody></table></div>
+  <div class="row" style="margin-top:10px"><button class="b" id="addProd">+ Produto</button><button class="b pri" id="saveProd">Salvar produtos</button><span id="pMsg" class="note"></span></div></div>`;
+}
+
+/* ---------- Registro (reposição/contagem) ---------- */
+function openSheet(tipo) {
+  const p = planoMaquina(st, sel, nowMin());
+  const d = new Date(), loc = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  $('#shBody').innerHTML = `<h2 id="shT">${tipo === 'contagem' ? 'Contagem' : 'Reposição'} · ${esc(st.maquinas[sel].nome)}</h2>
+   <p class="note">${tipo === 'contagem' ? 'Informe quantas unidades há em cada mola. Deixe em branco as que não contou.' : 'Quanto ficou em cada mola depois de repor. Já vem preenchido com o nível sugerido; ajuste o que for diferente. Troque o produto se mudou.'}</p>
+   <label>Quando <input type="datetime-local" id="evT" value="${loc}"></label>
+   <div class="erows">${p.cans.map(c => `<div class="erow"><span class="c">${c.can}</span><select data-can="${c.can}" class="evP" aria-label="Produto da canaleta ${c.can}"><option value="">— vazia —</option>${prodIds(c.tipo).map(id => `<option value="${esc(id)}" ${id === c.prod ? 'selected' : ''}>${esc(nomeP(id))}</option>`).join('')}</select><input type="number" min="0" max="${c.cap}" class="evN" data-can="${c.can}" aria-label="Unidades na canaleta ${c.can}" value="${tipo === 'contagem' ? '' : c.prod ? Math.max(c.alvo, c.est ? Math.round(c.est.valor) : 0) : ''}"></div>`).join('')}</div>
+   <div class="row"><button class="b pri" id="evSave" data-tipo="${tipo}">Salvar</button><button class="b" id="evCancel">Cancelar</button><span id="evMsg" class="note"></span></div>`;
+  $('#sheet').classList.add('on'); $('#evT').focus();
+}
+async function saveEvent(tipo) {
+  const v = $('#evT').value; if (!v) return;
+  const [dd, hh] = v.split('T'); const t = isoToMin(dd) + (+hh.slice(0, 2)) * 60 + (+hh.slice(3, 5));
+  const niveis = {}, produtos = {};
+  document.querySelectorAll('.evN').forEach(i => { if (i.value !== '') niveis[i.dataset.can] = Math.max(0, +i.value); });
+  document.querySelectorAll('.evP').forEach(s => { if (s.value) produtos[s.dataset.can] = s.value; });
+  if (!Object.keys(niveis).length) { $('#evMsg').textContent = 'Preencha ao menos uma mola.'; return; }
+  $('#evMsg').textContent = 'Salvando…';
+  try {
+    await db.collection('eventos').add({ maq: sel, t, tipo, niveis, produtos });
+    const maq = st.maquinas[sel], plano = { ...(maq.plano || {}) }; let mudou = false;
+    document.querySelectorAll('.evP').forEach(s => { const k = s.dataset.can, nv = s.value || null; if ((plano[k] || null) !== nv) { plano[k] = nv; mudou = true; } });
+    const upd = { plano };
+    if (tipo === 'reposicao') { upd.proximaVisita = minToIso(t + (maq.intervaloDias || 7) * DIA); mudou = true; }
+    if (mudou) await db.doc('maquinas/' + sel).update(upd);
+    $('#sheet').classList.remove('on');
+  } catch (e) { $('#evMsg').textContent = 'Não salvou: ' + (e.code || e.message || e); }
+}
+
+/* ---------- Importação da planilha ---------- */
+function loadXLSX() { return window.XLSX ? Promise.resolve() : new Promise((ok, err) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = ok; s.onerror = err; document.head.appendChild(s); }); }
+async function importar(file) {
+  const msg = $('#impMsg'); msg.textContent = 'Lendo planilha…';
+  try {
+    await loadXLSX();
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const ws = wb.Sheets['Dados']; if (!ws) throw new Error('aba Dados não encontrada');
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+    const h = rows[0].map(x => String(x || '').trim()), col = n => h.indexOf(n);
+    const cD = col('Data'), cC = col('Canaleta'), cV = col('Valor'), cS = col('Shopping'), cI = col('Incluir?');
+    if ([cD, cC, cV, cS].some(i => i < 0)) throw new Error('colunas esperadas não encontradas');
+    const porNome = {}; for (const m of maqIds()) porNome[st.maquinas[m].nome] = m;
+    const docs = {}; let fim = 0, n = 0;
+    for (const r of rows.slice(1)) {
+      if (typeof r[cD] !== 'number' || r[cC] == null || (cI >= 0 && r[cI] !== 'Sim')) continue;
+      const m = porNome[r[cS]]; if (!m) continue;
+      const t = Math.round((r[cD] - 46023) * 1440), mes = minToIso(t).slice(0, 7), k = m + '-' + mes;
+      (docs[k] = docs[k] || { maq: m, mes, v: [] }).v.push([t, +r[cC], Math.round(+r[cV] * 100) / 100]); fim = Math.max(fim, t); n++;
+    }
+    const ate = toDate(fim).toISOString().slice(0, 16);
+    for (const [k, d] of Object.entries(docs)) { d.v.sort((a, b) => a[0] - b[0]); msg.textContent = 'Gravando ' + k + '…'; await db.doc('vendas/' + k).set({ maq: d.maq, mes: d.mes, ate, f: d.v.flat() }); }
+    msg.textContent = n + ' vendas importadas, até ' + fmtDH(fim) + '.';
+  } catch (e) { msg.textContent = 'Não consegui importar: ' + (e.message || e.code || e); }
+}
+
+/* ---------- Eventos de interface ---------- */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button,a'); if (!t) return;
+  if (t.matches('.chip')) { sel = t.dataset.m; slotSel = null; try { localStorage.setItem('sq-maq', sel); } catch (x) {} renderNow(); }
+  else if (t.matches('.slot')) { slotSel = slotSel === +t.dataset.can ? null : +t.dataset.can; renderNow(); }
+  else if (t.id === 'copy') {
+    const p = planoMaquina(st, sel, nowMin()), mq = st.maquinas[sel];
+    const txt = `Reposição ${mq.nome}${mq.proximaVisita ? ' — ' + fmtDia(mq.proximaVisita) : ''}\n` + p.sep.map(s => `${s.qtd} × ${nomeP(s.prod)} (canaletas ${s.cans.join(', ')})`).join('\n');
+    try { await navigator.clipboard.writeText(txt); t.textContent = 'Copiada'; } catch (x) { t.textContent = 'Não deu para copiar'; }
+  }
+  else if (t.id === 'copyLink') { try { await navigator.clipboard.writeText(location.origin + location.pathname + '?k=' + KEY); t.textContent = 'Link copiado'; } catch (x) { t.textContent = 'Não deu para copiar'; } }
+  else if (t.id === 'regRep') openSheet('reposicao');
+  else if (t.id === 'regCont') openSheet('contagem');
+  else if (t.id === 'evCancel') $('#sheet').classList.remove('on');
+  else if (t.id === 'evSave') saveEvent(t.dataset.tipo);
+  else if (t.id === 'addGav') { const g = document.createElement('div'); g.className = 'gedit'; g.dataset.g = 'n'; g.innerHTML = '<input value="Nova gaveta" data-f="nome" aria-label="Nome"><select data-f="tipo" aria-label="Tipo"><option>Booster</option><option>Blister</option></select><input type="number" value="15" data-f="cap" aria-label="Capacidade"><input value="" data-f="can" aria-label="Canaletas">'; $('#gavs').appendChild(g); }
+  else if (t.id === 'saveMaq') {
+    const gavetas = [...document.querySelectorAll('#gavs .gedit')].map(r => ({ nome: r.querySelector('[data-f=nome]').value.trim(), tipo: r.querySelector('[data-f=tipo]').value, cap: +r.querySelector('[data-f=cap]').value || 1, can: r.querySelector('[data-f=can]').value.split(/[^0-9]+/).filter(Boolean).map(Number) })).filter(g => g.can.length);
+    await db.doc('maquinas/' + sel).update({ gavetas, intervaloDias: +$('#intv').value || 7, semPremium: $('#semP').checked, layoutInferido: false });
+    t.textContent = 'Salvo';
+  }
+  else if (t.id === 'saveCfg') {
+    const fatores = { ...(st.cfg.fatores || {}), '2026-12': +$('#cDez').value || 1 };
+    await db.doc('cfg/geral').set({ ...st.cfg, margemDias: +$('#cMarg').value, janelaDias: +$('#cJan').value || 21, minExib: +$('#cMin').value, modo: $('#cModo').value, fatores });
+    t.textContent = 'Salvo';
+  }
+  else if (t.id === 'addProd') { const id = 'p' + Date.now().toString(36); await db.doc('produtos/' + id).set({ nome: 'Novo produto', curto: '', preco: 14.99, custo: 0, tipo: 'Booster', premium: false, ativo: true }); }
+  else if (t.id === 'saveProd') {
+    $('#pMsg').textContent = 'Salvando…';
+    for (const tr of document.querySelectorAll('#ptab tbody tr')) {
+      const id = tr.dataset.p, o = st.produtos[id], g = f => tr.querySelector(`[data-f=${f}]`);
+      const nv = { ...o, nome: g('nome').value.trim(), curto: g('curto').value.trim(), preco: +g('preco').value, custo: +g('custo').value, tipo: g('tipo').value, premium: g('premium').checked, ativo: g('ativo').checked, estoqueLoja: g('estoqueLoja').value === '' ? null : +g('estoqueLoja').value };
+      if (JSON.stringify(nv) !== JSON.stringify(o)) await db.doc('produtos/' + id).set(nv);
+    }
+    $('#pMsg').textContent = 'Salvo.';
+  }
+  else if (t.dataset.del) { t.textContent = 'Apagando…'; await db.doc('eventos/' + t.dataset.del).delete(); }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'visDate' && t.value) await db.doc('maquinas/' + sel).update({ proximaVisita: t.value });
+  else if (t.id === 'slotProd') await db.doc('maquinas/' + sel).update({ plano: { [t.dataset.can]: t.value || null } });
+  else if (t.id === 'xls' && t.files[0]) importar(t.files[0]);
+  else if (t.id === 'seedF' && t.files.length) {
+    const msg = $('#seedMsg');
+    try {
+      let s = null, v = null;
+      for (const f of t.files) { const j = JSON.parse(await f.text()); if (Array.isArray(j)) v = j; else if (j.maquinas) s = j; }
+      if (!s || !v) { msg.textContent = 'Selecione os dois arquivos juntos (seed.json e vendas_inicial.json).'; return; }
+      await db.doc('cfg/geral').set(s.cfg);
+      for (const [k, x] of Object.entries(s.produtos)) await db.doc('produtos/' + k).set(x);
+      for (const x of v) { msg.textContent = 'Vendas ' + x.maq + ' ' + x.mes + '…'; await db.doc('vendas/' + x.maq + '-' + x.mes).set(x); }
+      for (const [k, x] of Object.entries(s.maquinas)) await db.doc('maquinas/' + k).set(x);
+    } catch (x) { msg.textContent = 'Falhou: ' + (x.code || x.message); }
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#sheet').classList.remove('on'); });
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') $('#sheet').classList.remove('on'); });
+window.addEventListener('hashchange', renderNow);
+
+/* ---------- Dados (Firestore, acesso pelo código do link) ---------- */
+let KEY = new URLSearchParams(location.search).get('k');
+try { if (KEY) localStorage.setItem('sq-k', KEY); else KEY = localStorage.getItem('sq-k'); } catch (e) {}
+const toTrip = f => { const v = []; for (let i = 0; i + 2 < f.length; i += 3) v.push([f[i], f[i + 1], f[i + 2]]); return v; };
+if (!KEY) { $('#status').textContent = 'Abra o sistema pelo link que você recebeu (ele contém o código de acesso).'; }
+else {
+  const fdb = getFirestore(initializeApp(CFG)), base = 'equipes/' + KEY + '/';
+  const mkDoc = p => { const r = doc(fdb, base + p); return { set: d => setDoc(r, d), update: d => setDoc(r, d, { merge: true }), delete: () => deleteDoc(r) }; };
+  db = { doc: mkDoc, collection: c => ({ onSnapshot: (f, e) => onSnapshot(collection(fdb, base + c), f, e), add: d => addDoc(collection(fdb, base + c), d), doc: id => mkDoc(c + '/' + id) }) };
+  timer = setTimeout(() => { if (!Object.values(loaded).every(Boolean)) $('#status').textContent = 'Os dados ainda não chegaram — verifique a conexão.'; }, 10000);
+  const sub = (col, fn) => db.collection(col).onSnapshot(s => { fn(s); loaded[col] = 1; render(); }, err => { $('#status').textContent = err.code === 'permission-denied' ? 'Código de acesso inválido. Peça o link novamente.' : 'Erro ao ler ' + col + ': ' + err.code; });
+  sub('cfg', s => { const d = s.docs.find(x => x.id === 'geral'); st.cfg = d ? d.data() : {}; });
+  sub('maquinas', s => { st.maquinas = Object.fromEntries(s.docs.map(d => [d.id, d.data()])); });
+  sub('produtos', s => { st.produtos = Object.fromEntries(s.docs.map(d => [d.id, d.data()])); });
+  sub('vendas', s => { st.vendas = s.docs.map(d => { const x = d.data(); return { ...x, v: toTrip(x.f || []) }; }); });
+  sub('eventos', s => { st.eventos = s.docs.map(d => ({ id: d.id, ...d.data() })); });
+}
+}
+</script>
+</body>
+</html>
